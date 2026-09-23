@@ -95,15 +95,14 @@ begin
         ((pixelHorz >= L_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= L_EDGE - BORDER_LINE_WIDTH) or
         (pixelHorz >= R_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE - BORDER_LINE_WIDTH)) and
         -- inside top and bottom EDGE
-        (pixelHorz >= T_EDGE- BORDER_LINE_WIDTH) and (pixelHorz <= B_EDGE - BORDER_LINE_WIDTH)
-        else '0';
+        (pixelHorz >= T_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= B_EDGE - BORDER_LINE_WIDTH)
         else '0';
     
     insideGrid <= '1' when
-        (pixelHorz 
-    
+        -- pixelHorz and pixelVert inside edge size
+        (pixelHorz > L_EDGE + BORDER_LINE_WIDTH) and (pixelHorz < R_EDGE - BORDER_LINE_WIDTH) and
+        (pixelVert > T_EDGE + BORDER_LINE_WIDTH) and (pixelVert < B_EDGE - BORDER_LINE_WIDTH)
+        else '0';
   
 
 end Behavioral;
-
-
