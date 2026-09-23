@@ -48,7 +48,7 @@ package scopeToHdmi_package is
     constant V_BP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(20, VIDEO_WIDTH_IN_BITS));
     constant V_TOTAL : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := V_ACTIVE + V_FP + V_SYNC + V_BP;
         
-    constant L_EDGE 
+    constant L_EDGE : 
     constant R_EDGE 
     constant WIDTH 
 
