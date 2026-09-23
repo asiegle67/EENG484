@@ -1,137 +1,84 @@
 ----------------------------------------------------------------------------------
---	Ascii art showing monitor and O'scope face
---				----------------------------------------|
---				|										|
---				|	|-------------------------------|	|
---				|	|(UL)					    (UR)|	|
---				|	|								|	|
---				|	|								|	|
---				|	|								|	|
---				|	|								|	|
---				|	|								|	|
---				|	|(LL)					    (LR)|	|
---				|	|-------------------------------|	|
---				|										|
---				|										|
---				----------------------------------------|
---
---				UL = Upper Left = xx, yy	I'd suggest 
---				UR = Upper Right = xx,yy
---				LL = Lower Left = xx,yy
---				LR = Lower Right = xx,yy
---				Total scope display is X x Y
---				There are 10 major horiziontal divisions (xxx pixels between divisions)	
---					Each division will have 5 hatch marks (xx pixels between hatches)
---				There are 10 major vertcal divisions (xxx pixels between divisions)
---					Each division will have 5 hatch marks (xx pixels between hatches)
---
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use ieee.std_logic_unsigned.all;
+use work.scopeToHdmi_package.all;
 
-package scopeToHdmi_package is
-
-
-    constant VIDEO_WIDTH_IN_BITS: NATURAL := 11;        -- 1650 "pixels" wide, this include FP, SYNCH and BP
-
-    constant H_ACTIVE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(1280, VIDEO_WIDTH_IN_BITS));
-    constant H_FP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(110, VIDEO_WIDTH_IN_BITS));
-    constant H_SYNC : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(40, VIDEO_WIDTH_IN_BITS));
-    constant H_BP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(220, VIDEO_WIDTH_IN_BITS));
-    constant H_TOTAL : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := H_ACTIVE + H_FP + H_SYNC + H_BP;
-
-    constant V_ACTIVE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(720, VIDEO_WIDTH_IN_BITS));
-    constant V_FP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(5, VIDEO_WIDTH_IN_BITS));	
-    constant V_SYNC : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(5, VIDEO_WIDTH_IN_BITS));
-    constant V_BP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(20, VIDEO_WIDTH_IN_BITS));
-    constant V_TOTAL : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := V_ACTIVE + V_FP + V_SYNC + V_BP;
-        
-    constant L_EDGE : 
-    constant R_EDGE 
-    constant WIDTH 
-
-    constant T_EDGE 
-    constant B_EDGE 
-    constant HEIGHT 
-	
-    -- This is actually half of the width
-    constant BORDER_LINE_WIDTH 
-
-	-- RGB color values
-    constant BORDER_R : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
-    constant BORDER_G : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
-    constant BORDER_B : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
-
-    constant GRID_R 
-    constant GRID_G 
-    constant GRID_B 
-
-    constant CH1_R 
-    constant CH1_G
-    constant CH1_B 
-
-    constant CH2_R
-    constant CH2_G
-    constant CH2_B
-
-    constant TRIGGER_R 
-    constant TRIGGER_G 
-    constant TRIGGER_B 
-
-
-component videoSignalGenerator is
-    PORT(	clk: in  STD_LOGIC;
+entity scopeToHdmi is
+    PORT ( sysClk : in  STD_LOGIC;
          resetn : in  STD_LOGIC;
-         hs: out STD_LOGIC;
-         vs: out STD_LOGIC;
-         de: out STD_LOGIC;
-         pixelHorz: out STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0);
-         pixelVert: out STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0));
-end component;
-
-component scopeFace is
-    PORT ( 	);
-end component;
-
-component clk_wiz_0 is
-    PORT( 
-        clk_out1: out STD_LOGIC;
-        clk_out2: out STD_LOGIC;
-        resetn: in STD_LOGIC;
-        locked: out STD_LOGIC;
-        clk_in1: in STD_LOGIC);
-end component;
+         btn: in	STD_LOGIC_VECTOR(2 downto 0);
+         tmdsDataP : out  STD_LOGIC_VECTOR (2 downto 0);
+         tmdsDataN : out  STD_LOGIC_VECTOR (2 downto 0);
+         tmdsClkP : out STD_LOGIC;
+         tmdsClkN : out STD_LOGIC;
+         hdmiOen:    out STD_LOGIC);
+end scopeToHdmi;
 
 
-component hdmi_tx_0 is
-    PORT (
-        pix_clk: in STD_LOGIC;
-        pix_clkx5: in STD_LOGIC;           
-        pix_clk_locked: in STD_LOGIC;       
-        rst: in STD_LOGIC;                  
-        red : in STD_LOGIC_VECTOR(7 downto 0);
-        green : in STD_LOGIC_VECTOR(7 downto 0);
-        blue : in STD_LOGIC_VECTOR(7 downto 0);
-        hsync: in STD_LOGIC;
-        vsync: in STD_LOGIC;
-        vde: in STD_LOGIC;
-        aux0_din: in STD_LOGIC_VECTOR(3 downto 0);
-        aux1_din: in STD_LOGIC_VECTOR(3 downto 0);
-        aux2_din: in STD_LOGIC_VECTOR(3 downto 0);
-        ade: in STD_LOGIC;            
-        TMDS_CLK_P: out STD_LOGIC;
-        TMDS_CLK_N: out STD_LOGIC;
-        TMDS_DATA_P: out STD_LOGIC_VECTOR(2 downto 0);
-        TMDS_DATA_N: out STD_LOGIC_VECTOR(2 downto 0));
-end component;
-
-component scopeToHdmi is
-    PORT ( );
-end component;
-     
-        	
-end package;
+architecture structure of scopeToHdmi is
 
 
+    signal red, green, blue: STD_LOGIC_VECTOR(7 downto 0);
+
+    signal triggerTime, triggerVolt: STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0);
+    signal pixelHorz, pixelVert: STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0);
+	    
+    signal ch1Wave, ch2Wave: STD_LOGIC;
+
+    signal videoClk, videoClk5x, clkLocked: STD_LOGIC;
+    
+    signal hsO, vsO, deO: STD_LOGIC;
+
+begin
+
+
+    vsg: videoSignalGenerator
+        PORT MAP (clk => videoClk,
+            resetn => resetn,
+            hsO => hs,
+            vsO => vs,
+            deO => de
+        );
+                 
+
+    sf: scopeFace
+        PORT MAP (clk => videoClk,
+            resetn => resetn,
+            pixelH => pixelH,
+            pixelV => pixelV,
+            triggerTime => triggerTime,
+            triggerVolt => triggerVolt,
+            ch1Wave => ch1,
+            -- '1' => ch1enb,
+            ch2Wave => ch2,
+            
+        );
+                 
+
+    hdmi_inst: hdmi_0
+        PORT MAP (
+            pix_clk => videoClk,	<other stuff>	);
+            
+
+    vc: clk_wiz_0
+	PORT MAP( 
+	    clk_out1 => videoClk,
+	    clk_out2 => videoClk5x,
+	    resetn => resetn,
+	    locked => clkLocked,
+	    clk_in1 => sysClk);
+
+    ------------------------------------------------------------------------------
+    -- Create a process which generates a 3-bit vector which shows if button
+    -- has change state.  Use this change vector to determine if you should 
+    -- increment/decrement the triggerTime or triggerVolt values
+    ------------------------------------------------------------------------------
+ 
+
+    ch1Wave <= '1' when  (pixelHorz = pixelVert) else '0';
+    ch2Wave <= '1' when  (pixelVert = triggerVolt) else '0';
+
+end structure;
