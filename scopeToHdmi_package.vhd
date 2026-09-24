@@ -35,29 +35,36 @@ use ieee.std_logic_unsigned.all;
 package scopeToHdmi_package is
 -- 11bit number is needed to store the 1650 pixel cycle for horzontal (vertical is 750, can also be represented with 11bits) 
     constant VIDEO_WIDTH_IN_BITS: NATURAL := 11;
+    
 -- HORIZONTAL VIDEO CYCLE FOR 1280x720 HDMI
     constant H_ACTIVE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(1280, VIDEO_WIDTH_IN_BITS));
     constant H_FP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(110, VIDEO_WIDTH_IN_BITS)); 
     constant H_SYNC : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(40, VIDEO_WIDTH_IN_BITS));
     constant H_BP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(220, VIDEO_WIDTH_IN_BITS));
     constant H_TOTAL : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := H_ACTIVE + H_FP + H_SYNC + H_BP;
+    
 -- VERTICAL VIDEO CYCLE FOR 1280x720 HDMI
     constant V_ACTIVE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(720, VIDEO_WIDTH_IN_BITS));
     constant V_FP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(5, VIDEO_WIDTH_IN_BITS));	
     constant V_SYNC : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(5, VIDEO_WIDTH_IN_BITS)); 
     constant V_BP : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(20, VIDEO_WIDTH_IN_BITS));	
     constant V_TOTAL : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := V_ACTIVE + V_FP + V_SYNC + V_BP;
+    
 -- DISPLAY VARIABLES
     -- Edges to get a 700x700p square display, centered in the 1280x720p monitor       
     constant L_EDGE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(290, VIDEO_WIDTH_IN_BITS));	
     constant R_EDGE  : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(990, VIDEO_WIDTH_IN_BITS));	
+    
     --Drawable screen width 700p
     constant WIDTH : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(700, VIDEO_WIDTH_IN_BITS));	 
+    
     -- Top and bottom edges (recall where the coordinate axis starts on the screen: top left)
     constant T_EDGE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(10, VIDEO_WIDTH_IN_BITS));	
     constant B_EDGE : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(710, VIDEO_WIDTH_IN_BITS));
+    
     -- Drawable screen height 700p	
     constant HEIGHT : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(700, VIDEO_WIDTH_IN_BITS));	 
+    
 	-- This is actually half of the width
     constant BORDER_LINE_WIDTH : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0) := std_logic_vector(to_unsigned(3, VIDEO_WIDTH_IN_BITS));	
 
@@ -66,23 +73,41 @@ package scopeToHdmi_package is
     constant BORDER_R : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
     constant BORDER_G : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
     constant BORDER_B : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
+    
 -- GRID: GREY
     constant GRID_R : STD_LOGIC_VECTOR(7 downto 0) := std_logic_vector(TO_UNSIGNED(64, 8));
     constant GRID_G : STD_LOGIC_VECTOR(7 downto 0) := std_logic_vector(TO_UNSIGNED(64, 8));
     constant GRID_B : STD_LOGIC_VECTOR(7 downto 0) := std_logic_vector(TO_UNSIGNED(64, 8));
+    
 -- CH1: YELLOW
     constant CH1_R : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
     constant CH1_G : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
     constant CH1_B : STD_LOGIC_VECTOR(7 downto 0) := X"00";
+    
 -- CH2: GREEN
     constant CH2_R : STD_LOGIC_VECTOR(7 downto 0) := X"00";
     constant CH2_G : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
     constant CH2_B : STD_LOGIC_VECTOR(7 downto 0) := X"00";
+    
 -- TRIGGER: CYAN
     constant TRIGGER_R : STD_LOGIC_VECTOR(7 downto 0) := X"00";
     constant TRIGGER_G : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
     constant TRIGGER_B : STD_LOGIC_VECTOR(7 downto 0) := X"FF";
+    
+-- CONSTANTS SET FOR DIVISONS   
+    constant NUM_DIVISIONS : NATURAL := 10;
+    constant WIDTH_N : NATURAL := to_integer(unsigned(WIDTH));
+    constant HEIGHT_N : NATURAL := to_integer(unsigned(HEIGHT));
+    constant H_DIV_PIXELS : NATURAL := WIDTH_N / NUM_DIVISIONS;
+    constant V_DIV_PIXELS : NATURAL := 70;
 
+-- CONSTANTS SET FOR HATCHES       
+    constant HATCH_PER_DIV : NATURAL := 5;
+    constant H_HATCH_PIXELS : NATURAL := 14;
+    constant V_HATCH_PIXELS : NATURAL := 14;
+    constant HATCH_HALF_LEN : NATURAL := 4;
+    constant H_CENTER : NATURAL := 640;
+    constant V_CENTER : NATURAL := 360;
 
 component videoSignalGenerator is
     PORT( clk: in  STD_LOGIC;
@@ -158,5 +183,4 @@ end component;
      
         	
 end package;
-
 
