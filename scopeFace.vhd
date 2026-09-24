@@ -6,6 +6,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
+use work.scopeToHdmi_package.all;
 
 entity scopeFace is
     PORT ( 	clk: in  STD_LOGIC;
@@ -87,7 +88,7 @@ begin
         ((pixelHorz >= T_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= T_EDGE - BORDER_LINE_WIDTH) or
         (pixelHorz >= B_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= B_EDGE - BORDER_LINE_WIDTH)) and
         -- inside L and R EDGE
-        (pixelHorz >= L_EDGE- BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE - BORDER_LINE_WIDTH)
+        (pixelHorz >= L_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE - BORDER_LINE_WIDTH)
         else '0';
         
     borderV <=	'1' when
@@ -104,5 +105,22 @@ begin
         (pixelVert > T_EDGE + BORDER_LINE_WIDTH) and (pixelVert < B_EDGE - BORDER_LINE_WIDTH)
         else '0';
   
+    -- grid and hash marks
+    process(pixelHorz, pixelVert)
+        variable gV, gH, hV, hH : STD_LOGIC;
+    begin
+        -- initialize the variables
+        gV := '0';
+        gH := '0';
+        hV := '0';
+        hH := '0';
+        -- loop for the grid position
+        for k in 1 to NUM_DIVISIONS - 1 loop
+            if pixelHorz = L_EDGE + k*H_DIV_PIXELS then gV := '1'; 
+                end if;
+            if 
+        
 
 end Behavioral;
+
+
