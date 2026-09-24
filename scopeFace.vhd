@@ -6,6 +6,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
+-- Access to package constants
 use work.scopeToHdmi_package.all;
 
 entity scopeFace is
@@ -24,20 +25,17 @@ entity scopeFace is
          ch2Enb: in STD_LOGIC);
 end scopeFace;
 
-
 architecture Behavioral of scopeFace is
-
     -- Set these signals to '1' when the features should be drawn at the current pixelHorz, pixelVert 
     -- cordinate.  These act like Feature Booleans which you will use in the process(clk) to set the 
     -- correct RGB for this pixel location. Finish and add more.
     signal borderH, borderV, gridH, gridV, hatchH, hatchV, triggerVoltMark, triggerTimeMark, insideGrid, drawCh1, drawCh2 : STD_LOGIC;
-
-
-begin           
+begin
 
     ---------------------------------------------------------------------
     -- Use the Feature Booleans to set the RGB at this pixel location.
-    -- The waveforms should sit "on top" of the grid.
+    -- The waveforms should sit "on top" of the grid. 
+    --SO waveform comes first in elif
     ---------------------------------------------------------------------
     process(clk)
     begin
@@ -47,11 +45,17 @@ begin
                 green <= (others => '0');
                 blue <= (others => '0');
             else
-                -- border
+                -- border and trigger triangles first, omnipresent
                 if ((borderH = '1') or (borderV = '1')) then
                     red <= BORDER_R;
                     green <= BORDER_G;
                     blue <= BORDER_B;
+                -- trigger  
+                elsif (triggerVoltMark = '1') or (triggerTimeMark = '1') then
+                    red <= TRIGGER_R;
+                    green <= TRIGGER_G;
+                    blue <= TRIGGER_B;
+                --Waveforms next, should go above grid/hatches
                 -- ch1
                 elsif drawCh1 = '1' then
                     red <= CH1_R;
@@ -62,11 +66,7 @@ begin
                     red <= CH2_R;
                     green <= CH2_G;
                     blue <= CH2_B;  
-                -- trigger  
-                elsif (triggerVoltMark = '1') and (triggerTimeMark = '1') then
-                    red <= TRIGGER_R;
-                    green <= TRIGGER_G;
-                    blue <= TRIGGER_B;
+                
                 -- grid
                 elsif (gridH = '1') or (gridV = '1') or (hatchH = '1') or (hatchV = '1') then
                     red <= GRID_R;
@@ -83,28 +83,32 @@ begin
     end process;
 
 
-    borderH <= '1' when 
-        -- check top or bottom Edge
-        ((pixelHorz >= T_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= T_EDGE - BORDER_LINE_WIDTH) or
-        (pixelHorz >= B_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= B_EDGE - BORDER_LINE_WIDTH)) and
-        -- inside L and R EDGE
-        (pixelHorz >= L_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE - BORDER_LINE_WIDTH)
-        else '0';
-        
-    borderV <=	'1' when
-        -- check L or R Edge
-        ((pixelHorz >= L_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= L_EDGE - BORDER_LINE_WIDTH) or
-        (pixelHorz >= R_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE - BORDER_LINE_WIDTH)) and
-        -- inside top and bottom EDGE
-        (pixelHorz >= T_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= B_EDGE - BORDER_LINE_WIDTH)
+--DEFINING THE AREAS WHERE EACH DRAWING IS TRUE
+    borderH <= '1' when
+    --VERTICAL CONSTRAINTS: Inbetween the top and bottom border edges
+        (((pixelVert >= T_EDGE - BORDER_LINE_WIDTH) and (pixelVert <= T_EDGE + BORDER_LINE_WIDTH)) 
+        or ((pixelVert >= B_EDGE - BORDER_LINE_WIDTH) and (pixelVert <= B_EDGE + BORDER_LINE_WIDTH))) and
+    -- HORIZONTAL CONSTRAINTS: within the left and right border bounds
+        (pixelHorz >= L_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE + BORDER_LINE_WIDTH)
         else '0';
     
-    insideGrid <= '1' when
-        -- pixelHorz and pixelVert inside edge size
-        (pixelHorz > L_EDGE + BORDER_LINE_WIDTH) and (pixelHorz < R_EDGE - BORDER_LINE_WIDTH) and
-        (pixelVert > T_EDGE + BORDER_LINE_WIDTH) and (pixelVert < B_EDGE - BORDER_LINE_WIDTH)
+    borderV <= '1' when
+    -- HORIZONTAL CONSTRAINTS: Between the left or right widths
+        (((pixelHorz >= L_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= L_EDGE + BORDER_LINE_WIDTH)) 
+        or ((pixelHorz >= R_EDGE - BORDER_LINE_WIDTH) and (pixelHorz <= R_EDGE + BORDER_LINE_WIDTH))) and
+        --VERTICAL CONSTRAINTS: within the height of the frame
+        (pixelVert >= T_EDGE - BORDER_LINE_WIDTH) and (pixelVert <= B_EDGE + BORDER_LINE_WIDTH)
         else '0';
-  
+        
+    --Helper for drawing grid
+    insideGrid <= '1' when
+        -- within the bounds
+        (pixelHorz > L_EDGE + BORDER_LINE_WIDTH) and
+        (pixelHorz < R_EDGE - BORDER_LINE_WIDTH) and
+        (pixelVert > T_EDGE + BORDER_LINE_WIDTH) and
+        (pixelVert < B_EDGE - BORDER_LINE_WIDTH)
+        else '0';
+        
     -- grid and hash marks
     process(pixelHorz, pixelVert)
         variable gV, gH, hV, hH : STD_LOGIC;
@@ -120,7 +124,8 @@ begin
                 end if;
             if 
         
+       
 
-end Behavioral;
+end Behavioral
 
 
