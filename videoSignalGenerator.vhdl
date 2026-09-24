@@ -1,4 +1,7 @@
 ----------------------------------------------------------------------------------
+-- Nathan & Aaron
+-- EENG484 
+-- September 23, 2026
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -10,18 +13,19 @@ entity videoSignalGenerator is
     PORT(	
          clk: in  STD_LOGIC;
          resetn : in  STD_LOGIC;
-         hs: out STD_LOGIC;
-         vs: out STD_LOGIC;
-         de: out STD_LOGIC;
-         pixelHorz: out STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0);
-         pixelVert: out STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0));
+         hs: out STD_LOGIC := '1';
+         vs: out STD_LOGIC := '1';
+         de: out STD_LOGIC := '0';
+         pixelHorz: out STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0) := (others => '0');
+         pixelVert: out STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0) := (others => '0')
+        );
 end videoSignalGenerator;
 
 architecture behavior of videoSignalGenerator is
 
 
-    signal h_cnt, v_cnt : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0);
-    signal h_activeArea, v_activeArea: STD_LOGIC;
+    signal h_cnt, v_cnt : STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS - 1 downto 0) := (others => '0');
+    signal h_activeArea, v_activeArea: STD_LOGIC := '0';
 
 
 begin
@@ -60,9 +64,9 @@ begin
         if rising_edge (clk) then
             if resetn = '0' then
                 hs <= '1';
-            elsif((v_cnt = V_FP - 1) and (h_cnt = H_FP - 1)) then
+            elsif h_cnt = H_FP - 1 then
                 hs <= '0';
-            elsif((v_cnt = V_FP + V_SYNC - 1) and (h_cnt = H_FP - 1)) then
+            elsif h_cnt = H_FP + H_SYNC - 1 then
                 hs <= '1';            
             end if;
         end if;
@@ -77,8 +81,8 @@ begin
         if rising_edge (clk) then
             if resetn = '0' then
                 pixelHorz <= (others => '0');
-            elsif(h_cnt >= H_FP + H_SYNC + H_BP - 1) then
-                pixelVert <= h_cnt - (H_FP + H_SYNC + H_BP - 1);
+            elsif (h_cnt >= H_FP + H_SYNC + H_BP - 1) then
+                pixelHorz <= h_cnt - (H_FP + H_SYNC + H_BP - 1);
             end if;
         end if;
     end process;   
@@ -90,9 +94,9 @@ begin
         if rising_edge (clk) then
             if resetn = '0' then
                 h_activeArea <= '0';
-            elsif((h_cnt = H_FP + H_SYNC + H_BP - 1) and (v_cnt = V_FP - 1))then
+            elsif (h_cnt = H_FP + H_SYNC + H_BP - 1) then
                 h_activeArea <= '1';
-            elsif((h_cnt = H_TOTAL - 1) and (v_cnt = V_FP - 1)) then
+            elsif (h_cnt = H_TOTAL - 1) then
                 h_activeArea <= '0';
             else
                 h_activeArea <= h_activeArea;
