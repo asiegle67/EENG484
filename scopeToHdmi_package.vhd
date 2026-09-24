@@ -103,12 +103,12 @@ package scopeToHdmi_package is
     constant WIDTH_N : NATURAL := to_integer(unsigned(WIDTH));
     constant HEIGHT_N : NATURAL := to_integer(unsigned(HEIGHT));
     constant H_DIV_PIXELS : NATURAL := WIDTH_N / NUM_DIVISIONS;
-    constant V_DIV_PIXELS : NATURAL := 70;
+    constant V_DIV_PIXELS : NATURAL := HEIGHT_N / NUM_DIVISIONS;
 
 -- CONSTANTS SET FOR HATCHES       
-    constant HATCH_PER_DIV : NATURAL := 5;
-    constant H_HATCH_PIXELS : NATURAL := 14;
-    constant V_HATCH_PIXELS : NATURAL := 14;
+    constant HATCH_PER_DIV : NATURAL := 4;
+    constant H_HATCH_PIXELS : NATURAL := H_DIV_PIXELS / (HATCH_PER_DIV + 1);
+    constant V_HATCH_PIXELS : NATURAL := V_DIV_PIXELS / (HATCH_PER_DIV + 1);
     constant HATCH_HALF_LEN : NATURAL := 4;
     constant H_CENTER : NATURAL := 640;
     constant V_CENTER : NATURAL := 360;
@@ -187,4 +187,3 @@ end component;
      
         	
 end package;
-
