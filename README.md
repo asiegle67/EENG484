@@ -5,44 +5,15 @@ videoSignalGenerator should be complete. Working on scopeFace. Did a little bit 
 Need to figure out how to implement scopeToHdmi_package to stop getting errors for not declared variables --> I think we need to finish scopeToHdmi first to fully write those, but H_FP should be done and I'm still getting not declared errors in videoSignalGenerator. 
 
 
+Not an error — it's a deliberate choice, and H_FP - 1 is the better one.
 
-4for the triangle arithmetic, the previous and statment removes that condition of looking outside of the triangle bounts
+Both work. The only thing that matters is that v_cnt advances once per line, at a consistent point that isn't inside the active region. Either instant qualifies.
 
-You're right that the earlier and bounds pixelHorz, which bounds the distance term. That part is fine — the distance is guaranteed to sit between 0 and 10, no wrap there.
+Here's the difference. Your counter order is FP → SYNC → BP → ACTIVE, so h_cnt = H_TOTAL - 1 is the last active pixel of the line. If v_cnt incremented there, the row number would change at the same edge as the final pixel's color decision — and since pixelVert is registered and lags a cycle, you'd be stepping the row boundary right at the point where scopeFace is still resolving the last pixel. Fragile.
 
-But that's not where the wrap happens. Look at what gets subtracted:
+h_cnt = H_FP - 1 is the end of the front porch, deep in blanking. Nothing is being drawn. The row advances, pixelVert settles, and by the time h_cnt reaches 370 and active video starts, everything is stable for the entire line. That's why the handout's given code uses it, and why vs and v_activeArea use the same instant — all three vertical events happen together, cleanly inside blanking.
 
-vhdl
-pixelVert >= triggerVolt - (distance)
+One consequence worth understanding: a "line" in v_cnt terms spans h_cnt 110 → 1649 → 0 → 109, not 0 → 1649. The active pixels (370–1649) sit entirely within one v_cnt value either way, so the picture is correct.
 
-The subtraction is triggerVolt - distance. Bounding pixelHorz constrains distance, but it says nothing about triggerVolt. And triggerVolt is a runtime value the buttons move around — nothing in this expression stops it from being small.
-
-Concretely: press the button enough times to walk triggerVolt down to 5. Distance is 10. Then 5 - 10 under unsigned arithmetic gives 2043, not −5. The condition becomes pixelVert >= 2043, false for every row on screen, and the entire upper half of the triangle disappears.
-
-The reason short-circuiting doesn't save you: VHDL's and with the when/else form doesn't guarantee short-circuit evaluation for signal expressions, and more to the point, this synthesizes to combinational logic where all terms are computed in parallel. There's no sequencing. The subtractor exists in hardware and produces its wrapped result regardless of what the other comparison says.
-
-The fix is the same either way — move the subtraction to the other side so both operands stay non-negative:
-
-vhdl
-and (pixelVert + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz) >= triggerVolt)
-
-Now the only subtraction is L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz, which your pixelHorz bound genuinely does protect.
-
-One thing to check while you're there: does triggerVolt ever legitimately get near zero? Its reset value is mid-screen and the buttons step by 10 with no limit checking — the lab explicitly says you don't have to keep it on screen. So yes, a user can walk it to a small value or wrap it past zero. Worth knowing that the triangle will do odd things there by design.
-
-
-2. Triangle arithmetic will wrap
-vhdl
-and (pixelVert >= triggerVolt - (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz))
-
-This is the problem I flagged earlier. Everything here is std_logic_vector under std_logic_unsigned, so subtraction wraps instead of going negative.
-
-Concretely: triggerVolt = 20, distance term = 11. You want pixelVert >= 9. You get 20 - 11 fine here — but when triggerVolt is small and the distance is larger, say triggerVolt = 5 with distance 11, 5 - 11 becomes 2042. The comparison then fails for every real row and half the triangle vanishes. It also wraps at the 11-bit boundary.
-
-Fix by moving the subtraction so nothing goes negative — add to both sides:
-
-vhdl
-and (pixelVert + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz) >= triggerVolt)
-
-Same inequality, all operands non-negative. Do the same on the triggerTimeMark line with pixelHorz and triggerTime.
+The processes you'd be changing are all given code, unchanged from the handout. Your professor's reference waveforms were produced with H_FP - 1, so matching it also means your screenshots line up with his.
 
