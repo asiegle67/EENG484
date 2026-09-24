@@ -4,62 +4,36 @@
 videoSignalGenerator should be complete. Working on scopeFace. Did a little bit of scopeToHdmi_package. Haven't touched scopeToHdmi.
 Need to figure out how to implement scopeToHdmi_package to stop getting errors for not declared variables --> I think we need to finish scopeToHdmi first to fully write those, but H_FP should be done and I'm still getting not declared errors in videoSignalGenerator. 
 
+Claude’s syntax-error claim is wrong. Your trigger process is already a valid flat structure:
 
-
-
-Syntax error — scopeToHdmi.vhdl, trigger process
-
-The indentation hides it, but the if/elsif chain is malformed:
-
-vhdl
-if resetn = '0' then
-triggerVolt <= ...;
-triggerTime <= ...;
-    elsif (activeButton(1) = '1') ...
-
-You have a nested if opening after the reset assignments that never gets closed, so the end if; end if; at the bottom doesn't balance. Vivado will point at end process or later.
-
-The structure should be flat — reset branch, then the two button branches as elsif at the same level:
-
-vhdl
 if rising_edge(sysClk) then
     if resetn = '0' then
-        triggerVolt <= ...;
-        triggerTime <= ...;
-    elsif (activeButton(1) = '1') and (currButton(1) = '1') then
         ...
-    elsif (activeButton(2) = '1') and (currButton(2) = '1') then
-        ...
+    elsif key3_release then
+        if key2_held then
+            ...
+        else
+            ...
+        end if;
+    elsif key4_release then
+        if key2_held then
+            ...
+        else
+            ...
+        end if;
     end if;
 end if;
 
-Count the end if; — you need exactly two (inner chain, then rising_edge).
+You have exactly two outer end if; statements: one closes the reset/key chain; one closes rising_edge. The two additional ones close the small “Key2 held?” tests.
 
-Logic bug — button bounce
-vhdl
-prevButton <= currButton;
-currButton <= btn;
+The button-bounce warning is physically valid, but it is not a syntax or simulation problem. Your current code matches the lab’s requested current/previous/XOR change-detection approach. I would not add debounce logic yet—it makes the design and testbench more complicated. Simulate first; if the real buttons later move the trigger multiple times per press, add a debouncer then.
 
-This samples every clock at 50 MHz. A mechanical switch bounces for several milliseconds, so one press produces dozens of transitions, each one a "release," each one moving the trigger by 10. In practice your trigger will jump by 200–500 pixels per press.
+Claude’s minor cleanup notes are right:
 
-Fix: only update on a slow tick. Add a counter and gate both assignments:
+constant V_DIV_PIXELS : NATURAL := HEIGHT_N / NUM_DIVISIONS;
 
-vhdl
-if sampleCnt = SAMPLE_MAX then
-    sampleCnt <= 0;
-    prevButton <= currButton;
-    currButton <= btn;
-else
-    sampleCnt <= sampleCnt + 1;
-end if;
+And keep the hatch setup internally consistent with four marks:
 
-At 50 MHz, SAMPLE_MAX around 500,000 gives 10 ms — well past bounce, fast enough to feel instant.
-
-One consequence: with slow sampling, activeButton stays high for the whole 10 ms window, so the trigger process fires 500,000 times. You need it as a single-cycle pulse. Easiest fix is to register it inside the same process — set it to currButton xor btn on the sample tick, and "000" otherwise — rather than leaving it as a concurrent assignment.
-
-Minor
-Swapped comments on drawCh1/drawCh2 in scopeFace (ch1 is the yellow diagonal).
-V_DIV_PIXELS := 70 is hardcoded while H_DIV_PIXELS is derived — make it HEIGHT_N / NUM_DIVISIONS for consistency. Same for the two hatch constants.
-
-Everything else — videoSignalGenerator, the package, scopeFace geometry, the port maps, the hdmi_tx_0 name fix — looks right.
-
+constant HATCH_PER_DIV : NATURAL := 4;
+constant H_HATCH_PIXELS : NATURAL := H_DIV_PIXELS / (HATCH_PER_DIV + 1);
+constant V_HATCH_PIXELS : NATURAL := V_DIV_PIXELS / (HATCH_PER_DIV + 1);
