@@ -5,15 +5,61 @@ videoSignalGenerator should be complete. Working on scopeFace. Did a little bit 
 Need to figure out how to implement scopeToHdmi_package to stop getting errors for not declared variables --> I think we need to finish scopeToHdmi first to fully write those, but H_FP should be done and I'm still getting not declared errors in videoSignalGenerator. 
 
 
-Not an error — it's a deliberate choice, and H_FP - 1 is the better one.
 
-Both work. The only thing that matters is that v_cnt advances once per line, at a consistent point that isn't inside the active region. Either instant qualifies.
 
-Here's the difference. Your counter order is FP → SYNC → BP → ACTIVE, so h_cnt = H_TOTAL - 1 is the last active pixel of the line. If v_cnt incremented there, the row number would change at the same edge as the final pixel's color decision — and since pixelVert is registered and lags a cycle, you'd be stepping the row boundary right at the point where scopeFace is still resolving the last pixel. Fragile.
+Syntax error — scopeToHdmi.vhdl, trigger process
 
-h_cnt = H_FP - 1 is the end of the front porch, deep in blanking. Nothing is being drawn. The row advances, pixelVert settles, and by the time h_cnt reaches 370 and active video starts, everything is stable for the entire line. That's why the handout's given code uses it, and why vs and v_activeArea use the same instant — all three vertical events happen together, cleanly inside blanking.
+The indentation hides it, but the if/elsif chain is malformed:
 
-One consequence worth understanding: a "line" in v_cnt terms spans h_cnt 110 → 1649 → 0 → 109, not 0 → 1649. The active pixels (370–1649) sit entirely within one v_cnt value either way, so the picture is correct.
+vhdl
+if resetn = '0' then
+triggerVolt <= ...;
+triggerTime <= ...;
+    elsif (activeButton(1) = '1') ...
 
-The processes you'd be changing are all given code, unchanged from the handout. Your professor's reference waveforms were produced with H_FP - 1, so matching it also means your screenshots line up with his.
+You have a nested if opening after the reset assignments that never gets closed, so the end if; end if; at the bottom doesn't balance. Vivado will point at end process or later.
+
+The structure should be flat — reset branch, then the two button branches as elsif at the same level:
+
+vhdl
+if rising_edge(sysClk) then
+    if resetn = '0' then
+        triggerVolt <= ...;
+        triggerTime <= ...;
+    elsif (activeButton(1) = '1') and (currButton(1) = '1') then
+        ...
+    elsif (activeButton(2) = '1') and (currButton(2) = '1') then
+        ...
+    end if;
+end if;
+
+Count the end if; — you need exactly two (inner chain, then rising_edge).
+
+Logic bug — button bounce
+vhdl
+prevButton <= currButton;
+currButton <= btn;
+
+This samples every clock at 50 MHz. A mechanical switch bounces for several milliseconds, so one press produces dozens of transitions, each one a "release," each one moving the trigger by 10. In practice your trigger will jump by 200–500 pixels per press.
+
+Fix: only update on a slow tick. Add a counter and gate both assignments:
+
+vhdl
+if sampleCnt = SAMPLE_MAX then
+    sampleCnt <= 0;
+    prevButton <= currButton;
+    currButton <= btn;
+else
+    sampleCnt <= sampleCnt + 1;
+end if;
+
+At 50 MHz, SAMPLE_MAX around 500,000 gives 10 ms — well past bounce, fast enough to feel instant.
+
+One consequence: with slow sampling, activeButton stays high for the whole 10 ms window, so the trigger process fires 500,000 times. You need it as a single-cycle pulse. Easiest fix is to register it inside the same process — set it to currButton xor btn on the sample tick, and "000" otherwise — rather than leaving it as a concurrent assignment.
+
+Minor
+Swapped comments on drawCh1/drawCh2 in scopeFace (ch1 is the yellow diagonal).
+V_DIV_PIXELS := 70 is hardcoded while H_DIV_PIXELS is derived — make it HEIGHT_N / NUM_DIVISIONS for consistency. Same for the two hatch constants.
+
+Everything else — videoSignalGenerator, the package, scopeFace geometry, the port maps, the hdmi_tx_0 name fix — looks right.
 
