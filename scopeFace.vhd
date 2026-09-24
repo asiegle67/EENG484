@@ -1,5 +1,7 @@
 ----------------------------------------------------------------------------------
--- Include proper comment header block
+-- Nathan & Aaron
+-- EENG484 
+-- September 23, 2026
 -- ***Do not use mod operator in this code***
 ----------------------------------------------------------------------------------
 library IEEE;
