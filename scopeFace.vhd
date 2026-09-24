@@ -114,24 +114,27 @@ begin
         (ch2 = '1')
         else '0';
 
-    -- Trigger Triangles
+-- Trigger Triangles
     --Volt on left, y-axis
     triggerVoltMark <= '1' when
         (insideGrid = '1') and
         -- Triangle base to tip: 10 pixels
         (pixelHorz >= L_EDGE + BORDER_LINE_WIDTH + 1) and (pixelHorz <= L_EDGE + BORDER_LINE_WIDTH + 11)
         -- Triangle height: +- 10pixels from the marker
-        and (pixelVert <= triggerVolt + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz)) 
-        and (pixelVert >= triggerVolt - (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz))
+        and (pixelVert <= triggerVolt + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz))
+        -- Add distance rather than subtracting it from triggerVolt, avoiding unsigned underflow
+        and (pixelVert + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz) >= triggerVolt)
         else '0';
         
+    --Time on top, x-axis
     triggerTimeMark <= '1' when
         (insideGrid = '1') and
         -- Triangle base to tip: 10 pixels
         (pixelVert >= T_EDGE + BORDER_LINE_WIDTH + 1) and (pixelVert <= T_EDGE + BORDER_LINE_WIDTH + 11)
         -- Triangle width: +-10 pixels at its base
-        and (pixelHorz <= triggerTime + (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert)) 
-        and (pixelHorz >= triggerTime - (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert))
+        and (pixelHorz <= triggerTime + (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert))
+        -- Add distance rather than subtracting it from triggerTime, avoiding unsigned underflow
+        and (pixelHorz + (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert) >= triggerTime)
         else '0';
         
     --Helper for drawing grid
