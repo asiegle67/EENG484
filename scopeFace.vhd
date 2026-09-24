@@ -99,6 +99,27 @@ begin
         --VERTICAL CONSTRAINTS: within the height of the frame
         (pixelVert >= T_EDGE - BORDER_LINE_WIDTH) and (pixelVert <= B_EDGE + BORDER_LINE_WIDTH)
         else '0';
+
+    -- Trigger Triangles
+    --Volt on left, y-axis
+    triggerVoltMark <= '1' when
+        (insideGrid = '1') and
+        -- Triangle base to tip: 10 pixels
+        (pixelHorz >= L_EDGE + BORDER_LINE_WIDTH + 1) and (pixelHorz <= L_EDGE + BORDER_LINE_WIDTH + 11)
+        -- Triangle height: +- 10pixels from the marker
+        and (pixelVert <= triggerVolt + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz)) 
+        and (pixelVert >= triggerVolt - (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz))
+        else '0';
+        
+    triggerTimeMark <= '1' when
+        (insideGrid = '1') and
+        -- Triangle base to tip: 10 pixels
+        (pixelVert >= T_EDGE + BORDER_LINE_WIDTH + 1) and (pixelVert <= T_EDGE + BORDER_LINE_WIDTH + 11)
+        -- Triangle width: +-10 pixels at its base
+        and (pixelHorz <= triggerTime + (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert)) 
+        and (pixelHorz >= triggerTime - (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert))
+        else '0';
+        
         
     --Helper for drawing grid
     insideGrid <= '1' when
