@@ -100,14 +100,14 @@ begin
         (pixelVert >= T_EDGE - BORDER_LINE_WIDTH) and (pixelVert <= B_EDGE + BORDER_LINE_WIDTH)
         else '0';
             
-    -- CH1
+    -- CH1: X green line @ volt trigger
     drawCh1 <= '1' when
         (insideGrid = '1') and
         (ch1Enb = '1') and
         (ch1 = '1')
         else '0';
     
-    -- CH2
+    -- CH2: diagonal line
     drawCh2 <= '1' when
         (insideGrid = '1') and
         (ch2Enb = '1') and
@@ -188,10 +188,6 @@ begin
             then hatchH <= hH; 
         else hatchH <= '0'; 
         end if;
-        
-        -- draw channel if trace at pixel, ch1 on, and inside grid
-        drawCh1 <= ch1 and ch1Enb and insideGrid;
-        drawCh2 <= ch2 and ch2Enb and insideGrid;
 
 end Behavioral;
 
