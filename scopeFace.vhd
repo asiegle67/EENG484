@@ -144,7 +144,7 @@ begin
         else '0';
         
     -- grid and hash marks
-    process(pixelHorz, pixelVert)
+    process(pixelHorz, pixelVert, insideGrid)
         variable gV, gH, hV, hH : STD_LOGIC;
     begin
         -- initialize the variables
@@ -161,7 +161,7 @@ begin
                 end if;
         end loop;  
         -- loop for the hatch position  
-        for k in 1 to NUM_DIVISIONS*HATCH_PER_DIV loop
+        for k in 1 to NUM_DIVISIONS*HATCH_PER_DIV - 1 loop
             -- if horz/vert falls within the edge and the correct division of pixels, then high
             if pixelHorz = L_EDGE + k*H_HATCH_PIXELS then hV := '1'; 
                 end if;
@@ -180,14 +180,16 @@ begin
         end if;     
         
         -- clipping for hatches for edge of screen -- if it's in the center and within the hatch division
-        if (pixelVert >= V_CENTER + HATCH_PER_DIV) and (pixelVert <= V_CENTER - HATCH_PER_DIV)
+        if (pixelVert >= V_CENTER - HATCH_HALF_LEN) and (pixelVert <= V_CENTER + HATCH_HALF_LEN)
             then hatchV <= hV;
         else hatchV <= '0'; 
         end if;
-        if(pixelHorz >= H_CENTER + HATCH_PER_DIV) and (pixelHorz <= H_CENTER - HATCH_PER_DIV)
+        if(pixelHorz >= H_CENTER - HATCH_HALF_LEN) and (pixelHorz <= H_CENTER + HATCH_HALF_LEN)
             then hatchH <= hH; 
         else hatchH <= '0'; 
         end if;
+
+    end process;
 
 end Behavioral;
 
