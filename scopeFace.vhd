@@ -99,27 +99,6 @@ begin
         --VERTICAL CONSTRAINTS: within the height of the frame
         (pixelVert >= T_EDGE - BORDER_LINE_WIDTH) and (pixelVert <= B_EDGE + BORDER_LINE_WIDTH)
         else '0';
-
-    -- Trigger Triangles
-    --Volt on left, y-axis
-    triggerVoltMark <= '1' when
-        (insideGrid = '1') and
-        -- Triangle base to tip: 10 pixels
-        (pixelHorz >= L_EDGE + BORDER_LINE_WIDTH + 1) and (pixelHorz <= L_EDGE + BORDER_LINE_WIDTH + 11)
-        -- Triangle height: +- 10pixels from the marker
-        and (pixelVert <= triggerVolt + (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz)) 
-        and (pixelVert >= triggerVolt - (L_EDGE + BORDER_LINE_WIDTH + 11 - pixelHorz))
-        else '0';
-        
-    triggerTimeMark <= '1' when
-        (insideGrid = '1') and
-        -- Triangle base to tip: 10 pixels
-        (pixelVert >= T_EDGE + BORDER_LINE_WIDTH + 1) and (pixelVert <= T_EDGE + BORDER_LINE_WIDTH + 11)
-        -- Triangle width: +-10 pixels at its base
-        and (pixelHorz <= triggerTime + (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert)) 
-        and (pixelHorz >= triggerTime - (T_EDGE + BORDER_LINE_WIDTH + 11 - pixelVert))
-        else '0';
-        
         
     --Helper for drawing grid
     insideGrid <= '1' when
@@ -141,12 +120,44 @@ begin
         hH := '0';
         -- loop for the grid position
         for k in 1 to NUM_DIVISIONS - 1 loop
+            -- if horz/vert falls within the edge and the correct division of pixels, then high
             if pixelHorz = L_EDGE + k*H_DIV_PIXELS then gV := '1'; 
                 end if;
-            if 
+            if pixelVert = T_EDGE + k*V_DIV_PIXELS then gH := '1';
+                end if;
+        end loop;  
+        -- loop for the hatch position  
+        for k in 1 to NUM_DIVISIONS*HATCH_PER_DIV loop
+            -- if horz/vert falls within the edge and the correct division of pixels, then high
+            if pixelHorz = L_EDGE + k*H_HATCH_PIXELS then hV := '1'; 
+                end if;
+            if pixelVert = T_EDGE + k*V_HATCH_PIXELS then hH := '1';
+                end if;
+        end loop;
         
-       
+        -- clipping for edge of screen for grid
+        if insideGrid = '1'
+            then gridV <= gV;
+        else gridV <= '0';
+        end if;
+        if insideGrid = '1'
+            then gridH <= gH;
+        else gridH <= '0';
+        end if;     
+        
+        -- clipping for hatches for edge of screen -- if it's in the center and within the hatch division
+        if (pixelVert >= V_CENTER + HATCH_PER_DIV) and (pixelVert <= V_CENTER - HATCH_PER_DIV)
+            then hatchV <= hV;
+        else hatchV <= '0'; 
+        end if;
+        if(pixelHorz >= H_CENTER + HATCH_PER_DIV) and (pixelHorz <= H_CENTER - HATCH_PER_DIV)
+            then hatchH <= hH; 
+        else hatchH <= '0'; 
+        end if;
+        
+        -- draw channel if trace at pixel, ch1 on, and inside grid
+        drawCh1 <= ch1 and ch1Enb and insideGrid;
+        drawCh2 <= ch2 and ch2Enb and insideGrid;
 
-end Behavioral
-
+end Behavioral;
 
