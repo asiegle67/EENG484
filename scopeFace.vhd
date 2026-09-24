@@ -166,7 +166,7 @@ begin
                 end if;
         end loop;  
         -- loop for the hatch position  
-        for k in 1 to NUM_DIVISIONS*HATCH_PER_DIV - 1 loop
+        for k in 1 to NUM_DIVISIONS*(HATCH_PER_DIV + 1) - 1 loop
             -- if horz/vert falls within the edge and the correct division of pixels, then high
             if pixelHorz = L_EDGE + k*H_HATCH_PIXELS then hV := '1'; 
                 end if;
@@ -197,4 +197,3 @@ begin
     end process;
 
 end Behavioral;
-
