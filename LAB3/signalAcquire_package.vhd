@@ -1,6 +1,6 @@
 --------------------------------------------------------------------
 -- Name:	Aaron Siegle & Nathan Johnston
--- Date:	Fall 2023
+-- Date:	Fall 2026
 -- File:	signalAcquire_Package.vhd
 --
 -- Purp: Defines signalAcquire specific components and defines constants
