@@ -1,6 +1,6 @@
 --------------------------------------------------------------------
--- Name:	Chris Coulston
--- Date:	Fall 2022
+-- Name:	Aaron and Nathan
+-- Date:	Fall 2026
 -- File:	signalAcquire.vhd
 --
 -- Purp: Tie the datapath and control unit together
@@ -106,18 +106,18 @@ begin
     sw(START_CONV_SW_BIT_INDEX) <= btnSync xor btnPrevious;
     
     -- LED magnitude indications 
-    reg0Magnitude(0) <= '1' when
+    reg0Magnitude(0) <= '0' when
         signed(reg0Data) > signed(FIRST_THRESHOLD_CONSTANT)
-        else '0';
-    reg0Magnitude(1) <= '1' when
+        else '1';
+    reg0Magnitude(1) <= '0' when
         signed(reg0Data) > signed(SECOND_THRESHOLD_CONSTANT)
-        else '0';
-    reg0Magnitude(2) <= '1' when
+        else '1';
+    reg0Magnitude(2) <= '0' when
         signed(reg0Data) > signed(THIRD_THRESHOLD_CONSTANT)
-        else '0';
-    reg0Magnitude(3) <= '1' when
+        else '1';
+    reg0Magnitude(3) <= '0' when
         signed(reg0Data) > signed(FOURTH_THRESHOLD_CONSTANT)
-        else '0';
+        else '1';
     
 end behavior;
 
