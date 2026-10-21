@@ -150,7 +150,7 @@ begin
 	    case state is
                 when RESET_STATE =>    cw <= B"1_1_1_0_0_11_11_11";
                 when POWER_UP_DELAY =>    cw <= B"1_1_1_0_0_11_10_11";
-                when RESET_AD7606_STATE =>    cw <= B"1_1_1_1_0_11_11_10";
+                when RESET_AD7606_STATE =>    cw <= B"1_1_1_1_0_11_00_10";
                 when WAIT_TRIGGER =>    cw <= B"1_1_1_0_0_11_11_11";
                 when ASSERT_CONVST =>    cw <= B"0_1_1_0_0_00_11_10";
                 when WAIT_BUSY_0 =>    cw <= B"1_1_1_0_0_00_11_11";
