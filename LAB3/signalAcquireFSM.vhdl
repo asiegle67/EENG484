@@ -33,7 +33,7 @@ architecture Behavioral of signalAcquire_Fsm is
 
 	signal state: state_type;
 	
-	signal SHORT_DELAY_DONE_SW, LONG_DELAY_DONE_SW;
+	signal SHORT_DELAY_DONE_SW, LONG_DELAY_DONE_SW, START_CONVERSION_SW, BUSY_SW, ALL_CHANNELS_HAVE_BEEN_READ_SW : STD_LOGIC;
 
 begin
 
@@ -41,7 +41,9 @@ begin
     -- logic in the state_process much easier and thus, you'll make fewer errors.
     SHORT_DELAY_DONE_SW <= sw(SHORT_DELAY_DONE_SW_BIT_INDEX);
     LONG_DELAY_DONE_SW <= sw(LONG_DELAY_DONE_SW_BIT_INDEX);
-    
+    START_CONVERSION_SW <= sw(START_CONV_SW_BIT_INDEX);
+    BUSY_SW <= sw(BUSY_SW_BIT_INDEX);
+    ALL_CHANNELS_HAVE_BEEN_READ_SW <= sw(ALL_CHANNELS_HAVE_BEEN_READ_SW_BIT_INDEX);
     
 	-------------------------------------------------------------------------------
 	-------------------------------------------------------------------------------
