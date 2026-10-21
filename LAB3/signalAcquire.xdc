@@ -100,3 +100,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports {an7606cs}]
 # ADC CONVERSION-BUSY STATUS
 set_property PACKAGE_PIN W15 [get_ports {an7606busy}]
 set_property IOSTANDARD LVCMOS33 [get_ports {an7606busy}]
+
+set_property PACKAGE_PIN T17 [get_ports {btn[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {btn[1]}]
+set_property PACKAGE_PIN N16 [get_ports {btn[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {btn[2]}]
