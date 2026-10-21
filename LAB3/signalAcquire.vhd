@@ -103,7 +103,7 @@ begin
         end if;
     end process;
 
-    sw(START_CONV_SW_BIT_INDEX) <= btnSync xor btnPrevious;
+    sw(START_CONV_SW_BIT_INDEX) <= btnSync and not btnPrevious;
     
     -- LED magnitude indications 
     reg0Magnitude(0) <= '0' when
