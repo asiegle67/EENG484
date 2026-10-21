@@ -54,10 +54,10 @@ begin
 				case state is
 
                 when RESET_STATE => 
-                    state <= POWER_UP_DELAY_STATE;
+                    state <= POWER_UP_DELAY;
                 
                 -- conditional if delay is done for power up    
-                when POWER_UP_DELAY_STATE =>
+                when POWER_UP_DELAY =>
                     if (LONG_DELAY_DONE_SW = '1') then 
                         state <= RESET_AD7606_STATE;
                     end if;
@@ -76,7 +76,7 @@ begin
                 
                 -- start conversion state, low for one short delay
                 when ASSERT_CONVST =>
-                    if (SHORT_DELAY_DOEN_SW = '1') then 
+                    if (SHORT_DELAY_DONE_SW = '1') then 
                         state <= WAIT_BUSY_0;
                     end if;
                     
@@ -126,15 +126,33 @@ begin
     -------------------------------------------------------------------------------
     -- LPT: List all the bits of your control word and define their purpose.
     --      cw              Purpose
+    --      10
     --
+    --
+    --
+    --
+    --  
     -- LPT: Add the truth table for any BBB which are used in the datapath
     --  counter control     Function
+    --          00              hold
+    --          01              load
+    --          10              inc
+    --          11              reset   
     -------------------------------------------------------------------------------
 	output_process: process (state)
 	begin
 	    case state is
                 when RESET_STATE =>    cw <= <complete>;
-
+                when POWER_UP_DELAY =>    cw <= <complete>;
+                when RESET_AD7606_STATE =>    cw <= <complete>;
+                when WAIT_TRIGGER =>    cw <= <complete>;
+                when ASSERT_CONVST =>    cw <= <complete>;
+                when WAIT_BUSY_0 =>    cw <= <complete>;
+                when WAIT_BUSY_1 =>    cw <= <complete>;
+                when WAIT_VALID_DATA =>    cw <= <complete>;
+                when LATCH =>    cw <= <complete>;
+                when PAUSE_BET_CHANNELS =>    cw <= <complete>;
+                when CLEAR_SHORT_CNT =>    cw <= <complete>;
  		<complete>
 
 		end case;
