@@ -156,9 +156,9 @@ begin
                 when WAIT_BUSY_0 =>    cw <= B"1_1_1_0_0_00_11_11";
                 when WAIT_BUSY_1 =>    cw <= B"1_1_1_0_0_00_11_11";
                 when WAIT_VALID_DATA =>    cw <= B"1_0_0_0_0_00_11_10";
-                when LATCH =>    cw <= B"1_0_0_0_1_10_11_11";
+                when LATCH =>    cw <= B"1_0_0_0_1_00_11_11";
                 when PAUSE_BET_CHANNELS =>    cw <= B"1_1_0_0_0_00_11_10";
-                when CLEAR_SHORT_CNT =>    cw <= B"1_1_0_0_0_00_11_11";
+                when CLEAR_SHORT_CNT =>    cw <= B"1_1_0_0_0_10_11_11";
 		end case;
 	end process;
 
