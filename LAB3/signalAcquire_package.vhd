@@ -32,9 +32,9 @@ CONSTANT RESET_AD7606_CW_BIT_INDEX : NATURAL := 7;
 CONSTANT REF_FILE_WRITE_CW_BIT_INDEX : NATURAL := 6;
 
 -- Added variables
--- CONSTANT REG_COUNTER_CW_LSB_INDEX : NATURAL := 4;
--- LONG_DELAY_COUNTER_CW_LSB_INDEX : NATURAL := 2;
--- SHORT_DELAY_COUNTER_CW_LSB_INDEX : NATURAL := 0;
+CONSTANT REG_COUNTER_CW_LSB_INDEX : NATURAL := 4;
+CONSTANT LONG_DELAY_COUNTER_CW_LSB_INDEX : NATURAL := 2;
+CONSTANT SHORT_DELAY_COUNTER_CW_LSB_INDEX : NATURAL := 0;
 
 -- where it is placed within the array
 CONSTANT ALL_CHANNELS_HAVE_BEEN_READ_SW_BIT_INDEX : NATURAL := 0;
@@ -44,9 +44,11 @@ CONSTANT LONG_DELAY_DONE_SW_BIT_INDEX : NATURAL := 2;
 CONSTANT DATAPATH_SW_WIDTH : NATURAL := 3;
 
 
-CONSTANT START_CONV_SW_BIT_INDEX : NATURAL := ?;
-CONSTANT BUSY_SW_BIT_INDEX : NATURAL := ?;
 
+CONSTANT START_CONV_SW_BIT_INDEX : NATURAL := 3;
+CONSTANT BUSY_SW_BIT_INDEX : NATURAL := 4;
+
+--SW AND CW SIZES
 -- determined based off array size
 CONSTANT SW_WIDTH : NATURAL := 5;
 CONSTANT CW_WIDTH : NATURAL := 11;
@@ -61,33 +63,49 @@ CONSTANT SHORT_DELAY_50Mhz_COUNTS : STD_LOGIC_VECTOR(SHORT_DELAY_50Mhz_CONST_WID
 
 
 -- You need to determine the 16-bit 2's complement ADC values for these voltages
-CONSTANT FOURTH_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0)  := x"????"; --  2.64V to counts
-CONSTANT THIRD_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0) := x"????"; --  1.98V to counts
-CONSTANT SECOND_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0)   := x"????"; --  1.32V to counts
-CONSTANT FIRST_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0)   := x"????"; --  0.66V to counts
+CONSTANT FOURTH_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0)  := x"4396"; --  2.64V to counts
+CONSTANT THIRD_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0) := x"32B0"; --  1.98V to counts
+CONSTANT SECOND_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0)   := x"21CB"; --  1.32V to counts
+CONSTANT FIRST_THRESHOLD_CONSTANT : STD_LOGIC_VECTOR(15 downto 0)   := x"10E5"; --  0.66V to counts
 
 
 -- FSM components (CU)
 component signalAcquire_Fsm is
-    PORT (cw : out STD_LOGIC_VECTOR(CW_WIDTH -1 downto 0);
-            sw : in STD_LOGIC_VECTOR(SW_WIDTH -1 downto 0);
-            clk : in STD_LOGIC;
-            reset : in STD_LOGIC;
-            );
-end component
+    PORT (
+        clk : in  STD_LOGIC;
+        resetn : in  STD_LOGIC;
+        sw : in  STD_LOGIC_VECTOR(SW_WIDTH - 1 downto 0);
+        cw : out STD_LOGIC_VECTOR(CW_WIDTH - 1 downto 0)
+    );
+end component;
 
 -- DP components
 component signalAcquire_Datapath is
-    PORT (cw : in STD_LOGIC_VECTOR(CW_WIDTH -1 downto 0);
-            sw : out STD_LOGIC_VECTOR(SW_WIDTH -1 downto 0);
-            clk : in STD_LOGIC;
-            reset : in STD_LOGIC;
-            rfAdder : in STD_LOGIC_VECTOR(2 downto 0);
-            rfData : out STD_LOGIC_VECTOR(15 downto 0)
-            );
-end component   
-    
-type state_type is <complete>
+    PORT (
+        clk          : in  STD_LOGIC;
+        resetn       : in  STD_LOGIC;
+        cw           : in  STD_LOGIC_VECTOR(CW_WIDTH - 1 downto 0);
+        sw           : out STD_LOGIC_VECTOR(DATAPATH_SW_WIDTH - 1 downto 0);
+        an7606data   : in  STD_LOGIC_VECTOR(15 downto 0);
+        rfAddr       : in  STD_LOGIC_VECTOR(2 downto 0);
+        rfData       : out STD_LOGIC_VECTOR(15 downto 0)
+    );
+end component;
+ 
+-- States that may be occupied
+type state_type is (
+    RESET_STATE,
+    POWER_UP_DELAY,
+    RESET_AD7606_STATE,
+    WAIT_TRIGGER,
+    ASSERT_CONVST,
+    WAIT_BUSY_0,
+    WAIT_BUSY_1,
+    WAIT_VALID_DATA,
+    LATCH,
+    PAUSE_BET_CHANNELS,
+    CLEAR_SHORT_CNT
+);
 
 component signalAcquire is
     PORT ( clk : in  STD_LOGIC;
@@ -110,5 +128,4 @@ END component;
     
     	
 end package;
-
 
