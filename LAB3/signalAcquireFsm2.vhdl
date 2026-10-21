@@ -143,7 +143,7 @@ begin
     --          11              reset   
     --
     -- cw bits:
-    -- B"CONVST_RD_CS_RESETAD7606_WRITE_
+    -- B"CONVST_RD_CS_RESETAD7606_WRITE_REGISTER_LONG_SHORT
     -------------------------------------------------------------------------------
 	output_process: process (state)
 	begin
