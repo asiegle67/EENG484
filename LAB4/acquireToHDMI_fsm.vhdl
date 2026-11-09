@@ -73,7 +73,7 @@ begin
                     when WAIT_FORCED =>
                         if (FORCED_MODE_SW = '0') then
                             state <= CLEAR_STORE_FLAG;
-                        elsif (SINGLE_SW '1') then
+                        elsif (SINGLE_SW = '1') then
                             state <= SET_STORE_FLAG;
                     end if;
                     
