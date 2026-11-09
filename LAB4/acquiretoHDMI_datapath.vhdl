@@ -45,10 +45,6 @@ entity acquireToHDMI_datapath is
 end acquireToHDMI_datapath;
 
 architecture behavior of acquireToHDMI_datapath is
-
--- AD7606 timing counters (same as Lab 3)
-    signal shortDelayCounter : STD_LOGIC_VECTOR(SHORT_DELAY_50Mhz_CONST_WIDTH - 1 downto 0);
-    signal longDelayCounter : STD_LOGIC_VECTOR(LONG_DELAY_50Mhz_CONST_WIDTH - 1 downto 0);
  
 -- Lab 3 delay counters
     signal shortDelayCounter: STD_LOGIC_VECTOR(SHORT_DELAY_50Mhz_CONST_WIDTH-1 downto 0);
@@ -71,6 +67,7 @@ architecture behavior of acquireToHDMI_datapath is
     signal ch1PixelFull, ch2PixelFull: SIGNED(31 downto 0);
     signal ch1Pixel, ch2Pixel: STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0);
     signal insideScope, insideScopeDelayed: STD_LOGIC;
+    signal storeIntoBramFlag: STD_LOGIC;
  
 -- triggers  (names match acquireToHDMI_tbWaveSetup.tcl, "fist" typo included)
     signal fistCh1DataStdLogicVector, secondCh1DataStdLogicVector: STD_LOGIC_VECTOR(15 downto 0);
@@ -115,7 +112,7 @@ begin
         GENERIC MAP (SHORT_DELAY_50Mhz_CONST_WIDTH)
         PORT MAP (clk => clk, 
             resetn => resetn, 
-            c => cw(SHORT_DELAY_COUNTER_CW_INDEX + 1 downto SHORT_DELAY_COUNTER_CW_INDEX),
+            c => cw(SHORT_DELAY_COUNTER_CW_BIT_INDEX + 1 downto SHORT_DELAY_COUNTER_CW_BIT_INDEX),
             d=> (others => '0'), 
             q => shortDelayCounter
             );
@@ -157,6 +154,7 @@ begin
     sampleCounter : genericCounter
         GENERIC MAP (SAMPLE_TIMER_WIDTH)
         PORT MAP (clk => clk,
+            resetn => resetn,
             c => cw(SAMPLING_COUNTER_CW_BIT_INDEX+1 downto SAMPLING_COUNTER_CW_BIT_INDEX),
             d => (others => '0'),
             q => timerCounter
@@ -164,12 +162,12 @@ begin
     
     sampleRateMux : genericMux4x1
         GENERIC MAP (SAMPLE_TIMER_WIDTH)
-        PORT MAP (s => cw(SAMPLING_COUNTER_CW_BIT_INDEX+1 downto SAMPLING_COUNTER_CW_BIT_INDEX),
+        PORT MAP (s => cw(SAMPLING_RATE_SELECT_CW_BIT_INDEX+1 downto SAMPLING_RATE_SELECT_CW_BIT_INDEX),
             y3 => LOWEST_RATE,
             y2 => LOW_RATE,
             y1 => HIGH_RATE,
             y0 => HIGHEST_RATE,
-            f => sampleRateCounts,
+            f => sampleRateCounts
             );
     
     sampleCompare : genericCompare
@@ -196,7 +194,7 @@ begin
             
      storageCompare : genericCompare
         GENERIC MAP (BRAM_ADDR_WIDTH)
-        PORT MAP (clk => clk,
+        PORT MAP (x => wrAddr,
             y => SCREEN_WIDTH_SAMPLES,
             g => wrAddrGreater,
             l => open,
@@ -285,7 +283,7 @@ begin
         '0';
 
     secondCh1LessThanTrigger <= '1' when
-        (SIGNED(secondCh1DataStdLogicVector) > triggerVolt16bitSigned) else
+        (SIGNED(secondCh1DataStdLogicVector) < triggerVolt16bitSigned) else
         '0';
         
     sw(CH1_TRIGGER_SW_BIT_INDEX) <= firstCh1GreaterThanTrigger and secondCh1LessThanTrigger;
@@ -316,7 +314,7 @@ begin
         '0';
 
     secondCh2LessThanTrigger <= '1' when
-        (SIGNED(secondCh2DataStdLogicVector) > triggerVolt16bitSigned) else
+        (SIGNED(secondCh2DataStdLogicVector) < triggerVolt16bitSigned) else
         '0';
         
     sw(CH2_TRIGGER_SW_BIT_INDEX) <= firstCh2GreaterThanTrigger and secondCh2LessThanTrigger;
