@@ -1,5 +1,5 @@
 --------------------------------------------------------------------
--- Name:	Chris Coulston
+-- Name:	Aaron and Nathan
 -- Date:	Feb 3, 2015
 -- Modified:	Sept 2022
 -- File:	acquireToHDMI_Datapath.vhdl
@@ -46,9 +46,50 @@ end acquireToHDMI_datapath;
 
 architecture behavior of acquireToHDMI_datapath is
 
--- SR Latch
-    signal storeIntoBramFlag: STD_LOGIC;
-      
+-- AD7606 timing counters (same as Lab 3)
+    signal shortDelayCounter : STD_LOGIC_VECTOR(SHORT_DELAY_50Mhz_CONST_WIDTH - 1 downto 0);
+    signal longDelayCounter : STD_LOGIC_VECTOR(LONG_DELAY_50Mhz_CONST_WIDTH - 1 downto 0);
+ 
+-- Lab 3 delay counters
+    signal shortDelayCounter: STD_LOGIC_VECTOR(SHORT_DELAY_50Mhz_CONST_WIDTH-1 downto 0);
+    signal longDelayCounter: STD_LOGIC_VECTOR(LONG_DELAY_50Mhz_CONST_WIDTH-1 downto 0);
+    signal shortDelayDone, longDelayDone: STD_LOGIC;
+ 
+-- sample interval timer
+    signal timerCounter: STD_LOGIC_VECTOR(SAMPLE_TIMER_WIDTH-1 downto 0);
+    signal sampleRateCounts: STD_LOGIC_VECTOR(SAMPLE_TIMER_WIDTH-1 downto 0);
+    signal sampleTimerGreater, sampleTimerEqual: STD_LOGIC;
+ 
+-- BRAM write address counter + FULL
+    signal wrAddr: STD_LOGIC_VECTOR(BRAM_ADDR_WIDTH-1 downto 0);
+    signal wrAddrGreater, wrAddrEqual: STD_LOGIC;
+ 
+-- BRAM read side
+    signal rdAddr: STD_LOGIC_VECTOR(BRAM_ADDR_WIDTH-1 downto 0);
+    signal ch1BramOut, ch2BramOut: STD_LOGIC_VECTOR(15 downto 0);
+    signal ch1Product, ch2Product: SIGNED(31 downto 0);
+    signal ch1PixelFull, ch2PixelFull: SIGNED(31 downto 0);
+    signal ch1Pixel, ch2Pixel: STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0);
+    signal insideScope, insideScopeDelayed: STD_LOGIC;
+ 
+-- triggers  (names match acquireToHDMI_tbWaveSetup.tcl, "fist" typo included)
+    signal fistCh1DataStdLogicVector, secondCh1DataStdLogicVector: STD_LOGIC_VECTOR(15 downto 0);
+    signal firstCh1GreaterThanTrigger, secondCh1LessThanTrigger: STD_LOGIC;
+    signal firstCh2DataStdLogicVector, secondCh2DataStdLogicVector: STD_LOGIC_VECTOR(15 downto 0);
+    signal firstCh2GreaterThanTrigger, secondCh2LessThanTrigger: STD_LOGIC;
+ 
+-- SgnToPixel for the trigger voltage marker
+    signal trigVoltProduct, trigVoltPixelFull: SIGNED(31 downto 0);
+    signal trigVscr: STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0);
+ 
+-- Lab 2 video
+    signal videoClk, videoClk5x, clkLocked: STD_LOGIC;
+    signal hdmiRst: STD_LOGIC;
+    signal hs, vs, de: STD_LOGIC;
+    signal pixelHorz, pixelVert: STD_LOGIC_VECTOR(VIDEO_WIDTH_IN_BITS-1 downto 0);
+    signal red, green, blue: STD_LOGIC_VECTOR(7 downto 0);
+    signal ch1Wave, ch2Wave: STD_LOGIC;
+
 
     
 begin
@@ -74,7 +115,7 @@ begin
         GENERIC MAP (SHORT_DELAY_50Mhz_CONST_WIDTH)
         PORT MAP (clk => clk, 
             resetn => resetn, 
-            c => cw(SHORT_DELAY_COUNTER_CW_BIT_INDEX+1 downto SHORT_DELAY_COUNTER_CW_BIT_INDEX), 
+            c => cw(SHORT_DELAY_COUNTER_CW_INDEX + 1 downto SHORT_DELAY_COUNTER_CW_INDEX),
             d=> (others => '0'), 
             q => shortDelayCounter
             );
@@ -128,7 +169,7 @@ begin
             y2 => LOW_RATE,
             y1 => HIGH_RATE,
             y0 => HIGHEST_RATE,
-            f => sampleTimerCounts,
+            f => sampleRateCounts,
             );
     
     sampleCompare : genericCompare
@@ -147,6 +188,7 @@ begin
     storageForData : genericCounter
         GENERIC MAP (BRAM_ADDR_WIDTH)
         PORT MAP (clk => clk,
+            resetn => resetn,
             c => cw(DATA_STORAGE_COUNTER_CW_BIT_INDEX+1 downto DATA_STORAGE_COUNTER_CW_BIT_INDEX),
             d => (others => '0'),
             q => wrAddr
@@ -165,7 +207,58 @@ begin
      sw(FULL_SW_BIT_INDEX) <= wrAddrGreater or wrAddrEqual;
 
 -- BRAM CODE
--- xxx
+    rdAddr <= STD_LOGIC_VECTOR(RESIZE(UNSIGNED(pixelHorz) - TO_UNSIGNED(SCOPE_LEFT_EDGE_PIXEL, VIDEO_WIDTH_IN_BITS), BRAM_ADDR_WIDTH));
+ 
+    -- only draw traces inside the scope face (outside it rdAddr would wrap around)
+    insideScope <= '1' when (UNSIGNED(pixelHorz) >= SCOPE_LEFT_EDGE_PIXEL) and (UNSIGNED(pixelHorz) <  SCOPE_LEFT_EDGE_PIXEL + SCOPE_WIDTH_PIXELS) else '0';
+ 
+    -- the BRAM output shows up one videoClk after the address, so delay insideScope
+    -- by one clock too so it lines up with the data coming out of the BRAM
+    process(videoClk)
+    begin
+        if (rising_edge(videoClk)) then
+            insideScopeDelayed <= insideScope;
+        end if;
+    end process;
+ 
+    -- port A writes samples (50 MHz side), port B is read by the video side
+    dataStorage_ch1 : blk_mem_gen_0
+        PORT MAP (clka => clk,
+            ena => '1',
+            wea => cw(DATA_STORAGE_CH1_WRITE_CW_BIT_INDEX downto DATA_STORAGE_CH1_WRITE_CW_BIT_INDEX),
+            addra => wrAddr,
+            dina => an7606data,
+            clkb => videoClk,
+            enb => '1',
+            addrb => rdAddr,
+            doutb => ch1BramOut
+            );
+ 
+    dataStorage_ch2 : blk_mem_gen_0
+        PORT MAP (clka => clk,
+            ena => '1',
+            wea => cw(DATA_STORAGE_CH2_WRITE_CW_BIT_INDEX downto DATA_STORAGE_CH2_WRITE_CW_BIT_INDEX),
+            addra => wrAddr,
+            dina => an7606data,
+            clkb => videoClk,
+            enb => '1',
+            addrb => rdAddr,
+            doutb => ch2BramOut
+            );
+ 
+    -- 2sToPixel:  pixel = -700 * sample / 2^16 + 360
+    ch1Product   <= SIGNED(ch1BramOut) * TO_SIGNED(-SCOPE_VERT_SPAN_PIXELS, 16);
+    ch1PixelFull <= SHIFT_RIGHT(ch1Product, 16) + TO_SIGNED(SCOPE_VERT_CENTER_PIXEL, 32);
+    ch1Pixel     <= STD_LOGIC_VECTOR(ch1PixelFull(VIDEO_WIDTH_IN_BITS-1 downto 0));
+ 
+    ch2Product   <= SIGNED(ch2BramOut) * TO_SIGNED(-SCOPE_VERT_SPAN_PIXELS, 16);
+    ch2PixelFull <= SHIFT_RIGHT(ch2Product, 16) + TO_SIGNED(SCOPE_VERT_CENTER_PIXEL, 32);
+    ch2Pixel     <= STD_LOGIC_VECTOR(ch2PixelFull(VIDEO_WIDTH_IN_BITS-1 downto 0));
+ 
+    -- compare with the row being drawn: if this row is the sample's row, light the trace
+    ch1Wave <= '1' when (ch1Pixel = pixelVert) and (insideScopeDelayed = '1') else '0';
+    ch2Wave <= '1' when (ch2Pixel = pixelVert) and (insideScopeDelayed = '1') else '0';
+
 
 -- CH1 TRIGGER
     ch1Register : genericRegister
@@ -174,7 +267,7 @@ begin
             resetn => resetn,
             load => cw(TRIG_CH1_WRITE_CW_BIT_INDEX),
             d => an7606data,
-            q => ch1Data16bitSLV
+            q => fistCh1DataStdLogicVector
             );
 
     ch1Register2 : genericRegister
@@ -182,21 +275,21 @@ begin
         PORT MAP (clk => clk,
             resetn => resetn,
             load => cw(TRIG_CH1_WRITE_CW_BIT_INDEX),
-            d => ch1Data16bitSLV,
-            q => secondch1Data16bitSLV
+            d => fistCh1DataStdLogicVector,
+            q => secondCh1DataStdLogicVector
             );
 
     -- since compare is unsigned, then can't use genericCompare here for the signCompare blocks, instead write logic for compairng
     firstCh1GreaterThanTrigger <= '1' when
-        (SIGNED(ch1Data16bitSLV) > trigVolt16Sgn) else
+        (SIGNED(fistCh1DataStdLogicVector) > triggerVolt16bitSigned) else
         '0';
 
     secondCh1LessThanTrigger <= '1' when
-        (SIGNED(secondch1Data16bitSLV) > trigVolt16Sgn) else
+        (SIGNED(secondCh1DataStdLogicVector) > triggerVolt16bitSigned) else
         '0';
         
     sw(CH1_TRIGGER_SW_BIT_INDEX) <= firstCh1GreaterThanTrigger and secondCh1LessThanTrigger;
-
+    ch1Data16bitSLV <= fistCh1DataStdLogicVector;
 
 -- CH2 TRIGGER
     ch2Register : genericRegister
@@ -205,7 +298,7 @@ begin
             resetn => resetn,
             load => cw(TRIG_CH2_WRITE_CW_BIT_INDEX),
             d => an7606data,
-            q => ch2Data16bitSLV
+            q => firstCh2DataStdLogicVector
             );
 
     ch2Register2 : genericRegister
@@ -213,29 +306,30 @@ begin
         PORT MAP (clk => clk,
             resetn => resetn,
             load => cw(TRIG_CH2_WRITE_CW_BIT_INDEX),
-            d => ch2Data16bitSLV,
-            q => secondch2Data16bitSLV
+            d => firstCh2DataStdLogicVector,
+            q => secondCh2DataStdLogicVector
             );
 
     -- since compare is unsigned, then can't use genericCompare here for the signCompare blocks, instead write logic for compairng
     firstCh2GreaterThanTrigger <= '1' when
-        (SIGNED(ch2Data16bitSLV) > trigVolt16Sgn) else
+        (SIGNED(firstCh2DataStdLogicVector) > triggerVolt16bitSigned) else
         '0';
 
     secondCh2LessThanTrigger <= '1' when
-        (SIGNED(secondch2Data16bitSLV) > trigVolt16Sgn) else
+        (SIGNED(secondCh2DataStdLogicVector) > triggerVolt16bitSigned) else
         '0';
         
-    sw(CH2_TRIGGER_SW_BIT_INDEX) <= firstCh2GreaterThanTrigger and secondCh2LessThanTrigger;    
+    sw(CH2_TRIGGER_SW_BIT_INDEX) <= firstCh2GreaterThanTrigger and secondCh2LessThanTrigger;
+    ch2Data16bitSLV <= firstCh2DataStdLogicVector;
     
 -- SgnToPixel -- trigger voltage
--- not sure what claude has here and it doesn't make too much sense
-
+    trigVoltProduct <= triggerVolt16bitSigned * TO_SIGNED(-SCOPE_VERT_SPAN_PIXELS, 16);
+    trigVoltPixelFull <= SHIFT_RIGHT(trigVoltProduct, 16) + TO_SIGNED(SCOPE_VERT_CENTER_PIXEL, 32);
+    trigVscr <= STD_LOGIC_VECTOR(trigVoltPixelFull(VIDEO_WIDTH_IN_BITS-1 downto 0));
 
 -- LAB 2    
-    
-    
         hdmiOen <= '1';
+        hdmiRst <= not resetn;
     
     vsg: videoSignalGenerator
         PORT MAP (clk => videoClk,
@@ -253,8 +347,8 @@ begin
             resetn => resetn,
             pixelHorz => pixelHorz,
             pixelVert => pixelVert,
-            triggerVolt => triggerVolt,
-            triggerTime => triggerTime,
+            triggerVolt => trigVscr,
+            triggerTime => triggerTimePixel,
             red => red,
             green => green,
             blue => blue,
@@ -291,7 +385,7 @@ begin
 	    clk_out2 => videoClk5x,
 	    resetn => resetn,
 	    locked => clkLocked,
-	    clk_in1 => sysClk);
+	    clk_in1 => clk);
 
 
 
