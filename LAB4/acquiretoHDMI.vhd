@@ -3,7 +3,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.STD_LOGIC_UNSIGNED.ALL;
 use work.acquireToHDMI_package.all;					-- include your library here with added components ac97, ac97cmd
-use work.hdmi_package.all;
+use work.scopeToHdmi_package.all;
 use work.basicBuildingBlocks_package.all;					-- include your library here with added components ac97, ac97cmd
 
 
@@ -33,6 +33,8 @@ architecture behavior of acquireToHDMI is
     signal cw: STD_LOGIC_VECTOR(CW_WIDTH -1 downto 0);
     signal sw: STD_LOGIC_VECTOR(SW_WIDTH -1 downto 0);
     signal forcedMode: STD_LOGIC;
+    signal btnMeta, btnSync, btnPrevious, buttonActivity: STD_LOGIC_VECTOR(2 downto 0);
+    signal busyMeta, busySync: STD_LOGIC;
         	
 begin
 
@@ -79,7 +81,9 @@ begin
     
     sw(SINGLE_FORCED_TRIGGER_SW_BIT_INDEX) <= buttonActivity(SINGLE_BUTTON_INDEX);
     sw(FORCED_MODE_SW_BIT_INDEX) <= forcedMode;
---    triggerCh2 <= sw(CH2_TRIGGER_SW_BIT_INDEX);
+
+    triggerCh1 <= sw(CH1_TRIGGER_SW_BIT_INDEX);
+    triggerCh2 <= sw(CH2_TRIGGER_SW_BIT_INDEX);
     ------------------------------------------------------------------------------
     -- Busy sync
     ------------------------------------------------------------------------------
@@ -96,10 +100,10 @@ begin
         end if;
     end process;
  
-    sw(BUSY_SW_BIT_INDEX) <= busySync;
-
+    sw(AN7606_BUSY_SW_BIT_INDEX) <= busySync;
 
  	datapath_inst: acquireToHDMI_datapath 
+ 	PORT MAP (
             clk => clk,
             resetn => resetn,
             cw => cw,
