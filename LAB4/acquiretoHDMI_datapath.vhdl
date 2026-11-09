@@ -112,6 +112,7 @@ begin
     
 -- sample interval timer 
 -- 00 highest, 01 = high, 10 = low, 11 = lowest   (Aaron ???)
+-- highest rate = fewest counts --> fastest, 00 set as the highest rate
     sampleCounter : genericCounter
         GENERIC MAP (SAMPLE_TIMER_WIDTH)
         PORT MAP (clk => clk,
@@ -138,23 +139,159 @@ begin
             l => open,
             e => sampleTimerEqual
             );
-     
+     -- send where the sample rate is (greater or less than the time) back to the sw
+     -- uses OR logic from G and E for the FSM to see as soon as the sample gets there, G more for errors in case it misses it initially
      sw(SAMPLE_SW_BIT_INDEX) <= sampleTimerGreater or sampleTimerEqual;
      
-     
+-- FULL for BRAM
+    storageForData : genericCounter
+        GENERIC MAP (BRAM_ADDR_WIDTH)
+        PORT MAP (clk => clk,
+            c => cw(DATA_STORAGE_COUNTER_CW_BIT_INDEX+1 downto DATA_STORAGE_COUNTER_CW_BIT_INDEX),
+            d => (others => '0'),
+            q => wrAddr
+            );     
             
-    
-    
-    
-    
-    
-    
-    vc: clk_wiz_0
-        PORT MAP (
-            clk_in1 => clk,
-            clk_out1 => videoClk,
+     storageCompare : genericCompare
+        GENERIC MAP (BRAM_ADDR_WIDTH)
+        PORT MAP (clk => clk,
+            y => SCREEN_WIDTH_SAMPLES,
+            g => wrAddrGreater,
+            l => open,
+            e => wrAddrEqual
+            );
+            
+    -- G and E used in case wr got passed set value and then FULL would never fire
+     sw(FULL_SW_BIT_INDEX) <= wrAddrGreater or wrAddrEqual;
+
+-- BRAM CODE
+-- xxx
+
+-- CH1 TRIGGER
+    ch1Register : genericRegister
+        GENERIC MAP (16)
+        PORT MAP (clk => clk,
             resetn => resetn,
-            clk_out2 => videoClk5x);
+            load => cw(TRIG_CH1_WRITE_CW_BIT_INDEX),
+            d => an7606data,
+            q => ch1Data16bitSLV
+            );
+
+    ch1Register2 : genericRegister
+        GENERIC MAP (16)
+        PORT MAP (clk => clk,
+            resetn => resetn,
+            load => cw(TRIG_CH1_WRITE_CW_BIT_INDEX),
+            d => ch1Data16bitSLV,
+            q => secondch1Data16bitSLV
+            );
+
+    -- since compare is unsigned, then can't use genericCompare here for the signCompare blocks, instead write logic for compairng
+    firstCh1GreaterThanTrigger <= '1' when
+        (SIGNED(ch1Data16bitSLV) > trigVolt16Sgn) else
+        '0';
+
+    secondCh1LessThanTrigger <= '1' when
+        (SIGNED(secondch1Data16bitSLV) > trigVolt16Sgn) else
+        '0';
+        
+    sw(CH1_TRIGGER_SW_BIT_INDEX) <= firstCh1GreaterThanTrigger and secondCh1LessThanTrigger;
+
+
+-- CH2 TRIGGER
+    ch2Register : genericRegister
+        GENERIC MAP (16)
+        PORT MAP (clk => clk,
+            resetn => resetn,
+            load => cw(TRIG_CH2_WRITE_CW_BIT_INDEX),
+            d => an7606data,
+            q => ch2Data16bitSLV
+            );
+
+    ch2Register2 : genericRegister
+        GENERIC MAP (16)
+        PORT MAP (clk => clk,
+            resetn => resetn,
+            load => cw(TRIG_CH2_WRITE_CW_BIT_INDEX),
+            d => ch2Data16bitSLV,
+            q => secondch2Data16bitSLV
+            );
+
+    -- since compare is unsigned, then can't use genericCompare here for the signCompare blocks, instead write logic for compairng
+    firstCh2GreaterThanTrigger <= '1' when
+        (SIGNED(ch2Data16bitSLV) > trigVolt16Sgn) else
+        '0';
+
+    secondCh2LessThanTrigger <= '1' when
+        (SIGNED(secondch2Data16bitSLV) > trigVolt16Sgn) else
+        '0';
+        
+    sw(CH2_TRIGGER_SW_BIT_INDEX) <= firstCh2GreaterThanTrigger and secondCh2LessThanTrigger;    
+    
+-- SgnToPixel -- trigger voltage
+-- not sure what claude has here and it doesn't make too much sense
+
+
+-- LAB 2    
+    
+    
+        hdmiOen <= '1';
+    
+    vsg: videoSignalGenerator
+        PORT MAP (clk => videoClk,
+            resetn => resetn,
+            hs => hs,
+            vs => vs,
+            de => de,
+            pixelHorz => pixelHorz,
+            pixelVert => pixelVert 
+        );
+                 
+
+    sf: scopeFace
+        PORT MAP (clk => videoClk,
+            resetn => resetn,
+            pixelHorz => pixelHorz,
+            pixelVert => pixelVert,
+            triggerVolt => triggerVolt,
+            triggerTime => triggerTime,
+            red => red,
+            green => green,
+            blue => blue,
+            ch1 => ch1Wave,
+            ch1Enb => '1',
+            ch2 => ch2Wave,
+            ch2Enb => '1'
+            );
+                 
+    hdmi_inst: hdmi_tx_0
+        PORT MAP (pix_clk => videoClk,
+            pix_clkx5      => videoClk5x,
+            pix_clk_locked => clkLocked,
+            rst => hdmiRst,
+            red => red,
+            green => green,
+            blue => blue,
+            hsync => hs,
+            vsync => vs,
+            vde => de,
+            aux0_din => "0000",
+            aux1_din => "0000",
+            aux2_din => "0000",
+            ade => '0',
+            TMDS_CLK_P => tmdsClkP,
+            TMDS_CLK_N => tmdsClkN,
+            TMDS_DATA_P => tmdsDataP,
+            TMDS_DATA_N => tmdsDataN);
+            
+
+    vc: clk_wiz_0
+	PORT MAP( 
+	    clk_out1 => videoClk,
+	    clk_out2 => videoClk5x,
+	    resetn => resetn,
+	    locked => clkLocked,
+	    clk_in1 => sysClk);
 
 
 
